@@ -420,6 +420,11 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
 		TickCorner.CornerRadius = UDim.new(0.25, 0)
 
+		--// Set Tick color to light purple
+		if not IsRadio then
+			Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
+		end
+
 		--// Stylise to correct type
 		if IsRadio then
 			Tick.ImageTransparency = 1
@@ -885,6 +890,9 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local Grab: Frame = Slider.Grab
 		local ValueText = Slider.ValueText
 		local Label = Slider.Label
+		
+		--// Set Grab color to light purple
+		Grab.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
 		
 		--// Apply rounded corners to Grab and ValueText
 		local GrabCorner = Grab:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Grab)
@@ -1559,6 +1567,18 @@ function ImGui:CreateWindow(WindowConfig)
 	--// Close Window 
 	local CloseButton: TextButton = TitleBar.Close
 	CloseButton.Visible = WindowConfig.NoClose ~= true
+
+	--// Define Colors table for dark gray backgrounds
+	WindowConfig.Colors = WindowConfig.Colors or {}
+	WindowConfig.Colors.CheckBox = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Keybind = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Slider = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
 
 	function WindowConfig:Close()
 		local Callback = WindowConfig.CloseCallback
