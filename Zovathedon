@@ -420,10 +420,8 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
 		TickCorner.CornerRadius = UDim.new(0.25, 0)
 
-		--// Set Tick color to light purple
-		if not IsRadio then
-			Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
-		end
+		--// Set Tick color to light purple for all checkboxes (including radio buttons)
+		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -813,7 +811,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		--// Open
 		Config:SetOpen(Config.Open or false)
 
-		local ContainClass = ImGui:ContainerClass(Container, Config, Window) 
+		local ContainClass = ImGui:ContainerClass(Holder, Config, Window) 
 		return self:NewInstance(Header, ContainClass)
 	end
 
@@ -1568,15 +1566,57 @@ function ImGui:CreateWindow(WindowConfig)
 	local CloseButton: TextButton = TitleBar.Close
 	CloseButton.Visible = WindowConfig.NoClose ~= true
 
-	--// Define Colors table for dark gray backgrounds
+	--// Define Colors table for dark gray backgrounds for all elements
 	WindowConfig.Colors = WindowConfig.Colors or {}
+	WindowConfig.Colors.Button = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Image = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.ScrollBox = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Label = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
 	WindowConfig.Colors.CheckBox = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Viewport = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.TextInput = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Console = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Table = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.CollapsingHeader = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.TreeNode = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Separator = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Row = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.Slider = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
 	WindowConfig.Colors.Keybind = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
-	WindowConfig.Colors.Slider = {
+	WindowConfig.Colors.Combo = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	}
+	WindowConfig.Colors.ProgressBar = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
 
