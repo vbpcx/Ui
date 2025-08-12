@@ -63,6 +63,7 @@ local UserInputService: UserInputService = GetService("UserInputService")
 local Players: Players = GetService("Players")
 local CoreGui = GetService("CoreGui")
 local RunService: RunService = GetService("RunService")
+local HttpService: HttpService = GetService("HttpService")
 
 --// LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -72,6 +73,11 @@ local Mouse = LocalPlayer:GetMouse()
 --// ImGui Config
 local IsStudio = RunService:IsStudio()
 ImGui.NoWarnings = not IsStudio
+
+--// Config Storage
+local ConfigFolder = Instance.new("Folder")
+ConfigFolder.Name = "ImGuiConfigs"
+ConfigFolder.Parent = PlayerGui
 
 --// Prefabs
 function ImGui:FetchUI()
@@ -139,12 +145,13 @@ local AddionalStyles = {
 		Name="CornerRadius",
 		Recursive=true
 	}] = function(GuiObject: GuiObject, Value, Class)
+		if not Value then return end
 		local UICorner = GuiObject:FindFirstChildOfClass("UICorner")
 		if not UICorner then
 			UICorner = ImGui:CreateInstance("UICorner", GuiObject)
 		end
 
-		UICorner.CornerRadius = Class.CornerRadius or UDim.new(0.25, 0) -- Default to 25% rounded corners
+		UICorner.CornerRadius = Class.CornerRadius
 	end,
 
 	[{
@@ -261,13 +268,6 @@ function ImGui:CheckStyles(GuiObject: GuiObject, Class, Colors)
 			end
 		end
 	end
-
-	--// Apply default 25% rounded corners to all elements
-	local UICorner = GuiObject:FindFirstChildOfClass("UICorner")
-	if not UICorner then
-		UICorner = ImGui:CreateInstance("UICorner", GuiObject)
-	end
-	UICorner.CornerRadius = UDim.new(0.25, 0)
 
 	--// Label functions/Styliser
 	local ElementType = GuiObject.Name
@@ -406,12 +406,19 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 	function ContainerClass:Checkbox(Config)
 		Config = Config or {}
 		local IsRadio = Config.IsRadio
+		Config.CornerRadius = UDim.new(0.25, 0) -- 25% rounded corners for checkbox
 
 		local CheckBox = Prefabs.CheckBox:Clone()
 		local Tickbox: ImageButton = CheckBox.Tickbox
 		local Tick: ImageLabel = Tickbox.Tick
 		local Label = CheckBox.Label
 		local ObjectClass = self:NewInstance(CheckBox, Config)
+
+		--// Apply rounded corners to Tickbox and Tick
+		local TickboxCorner = Tickbox:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tickbox)
+		TickboxCorner.CornerRadius = UDim.new(0.25, 0)
+		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
+		TickCorner.CornerRadius = UDim.new(0.25, 0)
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -1641,6 +1648,112 @@ function ImGui:CreateWindow(WindowConfig)
 		self.Colors.TitleBar.BackgroundColor3 = Color
 
 		return self
+	end
+
+	--// Config System
+	function WindowConfig:SaveConfig(ConfigName: string)
+		if not ConfigName or ConfigName == "" then
+			ImGui:Warn("Config name cannot be empty")
+			return self
+		end
+
+		local ConfigData = {
+			Position = {
+				X = {Scale = Window.Position.X.Scale, Offset = Window.Position.X.Offset},
+				Y = {Scale = Window.Position.Y.Scale, Offset = Window.Position.Y.Offset}
+			},
+			Size = {
+				X = {Scale = Window.Size.X.Scale, Offset = Window.Size.X.Offset},
+				Y = {Scale = Window.Size.Y.Scale, Offset = Window.Size.Y.Offset}
+			},
+			Color = {
+				R = self.Colors.Window.BackgroundColor3.R,
+				G = self.Colors.Window.BackgroundColor3.G,
+				B = self.Colors.Window.BackgroundColor3.B
+			}
+		}
+
+		local Success, Encoded = pcall(function()
+			return HttpService:JSONEncode(ConfigData)
+		end)
+
+		if not Success then
+			ImGui:Warn("Failed to encode config:", ConfigName)
+			return self
+		end
+
+		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName) or Instance.new("StringValue")
+		ConfigInstance.Name = ConfigName
+		ConfigInstance.Value = Encoded
+		ConfigInstance.Parent = ConfigFolder
+
+		return self
+	end
+
+	function WindowConfig:LoadConfig(ConfigName: string)
+		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName)
+		if not ConfigInstance then
+			ImGui:Warn("Config not found:", ConfigName)
+			return self
+		end
+
+		local Success, ConfigData = pcall(function()
+			return HttpService:JSONDecode(ConfigInstance.Value)
+		end)
+
+		if not Success then
+			ImGui:Warn("Failed to decode config:", ConfigName)
+			return self
+		end
+
+		-- Apply position
+		if ConfigData.Position then
+			self:SetPosition(UDim2.new(
+				ConfigData.Position.X.Scale,
+				ConfigData.Position.X.Offset,
+				ConfigData.Position.Y.Scale,
+				ConfigData.Position.Y.Offset
+			))
+		end
+
+		-- Apply size
+		if ConfigData.Size then
+			self:SetSize(UDim2.new(
+				ConfigData.Size.X.Scale,
+				ConfigData.Size.X.Offset,
+				ConfigData.Size.Y.Scale,
+				ConfigData.Size.Y.Offset
+			))
+		end
+
+		-- Apply color
+		if ConfigData.Color then
+			self:SetWindowColor(Color3.new(
+				ConfigData.Color.R,
+				ConfigData.Color.G,
+				ConfigData.Color.B
+			))
+		end
+
+		return self
+	end
+
+	function WindowConfig:DeleteConfig(ConfigName: string)
+		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName)
+		if ConfigInstance then
+			ConfigInstance:Destroy()
+		else
+			ImGui:Warn("Config not found:", ConfigName)
+		end
+		return self
+	end
+
+	function WindowConfig:GetConfigs()
+		local Configs = {}
+		for _, ConfigInstance in ipairs(ConfigFolder:GetChildren()) do
+			table.insert(Configs, ConfigInstance.Name)
+		end
+		return Configs
 	end
 
 	Toggle.ToggleButton.Activated:Connect(function()
