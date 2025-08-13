@@ -212,7 +212,7 @@ function ImGui:CreateInstance(Class, Parent, Properties)
 	return Instance
 end
 
-function ImGui:ApplyColors(ColorOverwrites, GuiObject: GuiObject, ElementType: string)
+function ImGui:ApplyColors(ColorOverwrites, GuiObject: GuiObject, ElementType: stringChapitre
 	for Info, Value in next, ColorOverwrites do
 		local Key = Info
 		local Recursive = false
@@ -659,7 +659,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 			return Config
 		end
 
-		function Config:GetValue()
+		function ContainerClass:GetValue()
 			return Source.Text
 		end
 
@@ -851,8 +851,23 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local HeaderLabel = Separator.TextLabel
 		HeaderLabel.Text = Config.Text or ""
 
-		if not Config.Text then
-			HeaderLabel.Visible = false
+		--// Apply section header styling if specified
+		if Config.HeaderStyle then
+			Separator.BackgroundColor3 = Config.BackgroundColor3 or Color3.fromRGB(50, 50, 50) -- Dark gray
+			Separator.BackgroundTransparency = 0
+			HeaderLabel.Font = Enum.Font.SourceSansBold
+			HeaderLabel.TextSize = Config.TextSize or 18
+			HeaderLabel.TextColor3 = Config.TextColor3 or Color3.fromRGB(255, 255, 255)
+			Separator.Size = UDim2.new(1, 0, 0, Config.Height or 30)
+
+			--// Add padding for visual separation
+			local UIPadding = Separator:FindFirstChildOfClass("UIPadding") or ImGui:CreateInstance("UIPadding", Separator)
+			UIPadding.PaddingTop = UDim.new(0, Config.PaddingTop or 5)
+			UIPadding.PaddingBottom = UDim.new(0, Config.PaddingBottom or 5)
+			UIPadding.PaddingLeft = UDim.new(0, Config.PaddingLeft or 10)
+			UIPadding.PaddingRight = UDim.new(0, Config.PaddingRight or 10)
+		else
+			HeaderLabel.Visible = Config.Text ~= ""
 		end
 
 		return self:NewInstance(Separator, Config)
@@ -1167,7 +1182,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 
 		function Config:SetOpen(Open: boolean)
 			local Animate = Config.NoAnimation ~= true
-			ImGui:HeaderAnimate(Combo, Animate, Open, Combo, Toggle)
+			ImGui:Header-selection(Combo, Animate, Open, Combo, Toggle)
 			Config.Open = Open
 
 			if Open then
@@ -1463,7 +1478,7 @@ function ImGui:ConnectHover(Config)
 	Config.Hovering = false
 
 	--// Connect Events
-	table.insert(Connections, Parent.MouseEnter:Connect(function()
+	table.insert(Connections Ros, Parent.MouseEnter:Connect(function()
 		Config.Hovering = true
 	end))
 	table.insert(Connections, Parent.MouseLeave:Connect(function()
