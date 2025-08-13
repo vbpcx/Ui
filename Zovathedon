@@ -1,7 +1,3 @@
---// Written by depso
---// MIT License
---// Copyright (c) 2024 Depso
-
 local ImGui = {
 	Animations = {
 		Buttons = {
@@ -31,11 +27,11 @@ local ImGui = {
 		WindowBorder = {
 			Selected = {
 				Transparency = 0,
-				Thickness = 1
+				Thickness = 2
 			},
 			Deselected = {
 				Transparency = 0.7,
-				Thickness = 1
+				Thickness = 2
 			}
 		},
 	},
@@ -212,7 +208,7 @@ function ImGui:CreateInstance(Class, Parent, Properties)
 	return Instance
 end
 
-function ImGui:ApplyColors(ColorOverwrites, GuiObject: GuiObject, ElementType: stringChapitre
+function ImGui:ApplyColors(ColorOverwrites, GuiObject: GuiObject, ElementType: string)
 	for Info, Value in next, ColorOverwrites do
 		local Key = Info
 		local Recursive = false
@@ -279,13 +275,6 @@ function ImGui:CheckStyles(GuiObject: GuiObject, Class, Colors)
 
 	if ColorOverwrites then
 		ImGui:ApplyColors(ColorOverwrites, GuiObject, ElementType)
-	end
-
-	--// Set properties
-	for Key, Value in next, Class do
-		pcall(function() --// If the property does not exist
-			GuiObject[Key] = Value
-		end)
 	end
 end
 
@@ -414,15 +403,17 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local Label = CheckBox.Label
 		local ObjectClass = self:NewInstance(CheckBox, Config)
 
+		--// Explicitly set Tickbox background to dark gray
+		Tickbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+		--// Explicitly set Tick (checkmark) to light purple
+		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
+
 		--// Apply rounded corners to Tickbox and Tick
 		local TickboxCorner = Tickbox:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tickbox)
 		TickboxCorner.CornerRadius = UDim.new(0.25, 0)
 		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
 		TickCorner.CornerRadius = UDim.new(0.25, 0)
-
-		--// Set Tickbox background to dark gray and Tick to light purple
-		Tickbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Dark gray
-		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255) -- Light purple
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -437,7 +428,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		ImGui:ApplyAnimations(CheckBox, "Buttons", Tickbox)
 
 		local Value = Config.Value or false
-		local Features = Config.Features or {} -- Table to store feature elements
 
 		--// Callback
 		local function Callback(...)
@@ -449,7 +439,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 			Value = NewValue
 			Config.Value = Value
 
-			--// Animations for checkbox
+			--// Animations
 			local Size = Value and UDim2.fromScale(1,1) or UDim2.fromScale(0,0)
 			ImGui:Tween(Tick, {
 				Size = Size
@@ -458,35 +448,15 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 				TextTransparency = Value and 0 or 0.3
 			}, nil, NoAnimation)
 
-			--// Feature visibility animation
-			for _, Feature in pairs(Features) do
-				ImGui:Tween(Feature, {
-					Visible = Value,
-					Size = Value and Feature:GetAttribute("OriginalSize") or UDim2.fromScale(0, 0),
-					Transparency = Value and 0 or 1
-				}, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), NoAnimation)
-			end
-
 			--// Fire callback
 			Callback(Value)
 
 			return Config
 		end
+		Config:SetTicked(Value, true)
 
 		function Config:Toggle()
 			Config:SetTicked(not Value)
-			return Config
-		end
-
-		--// Add feature method
-		function Config:AddFeature(FeatureElement)
-			if FeatureElement then
-				-- Store original size for animation
-				FeatureElement:SetAttribute("OriginalSize", FeatureElement.Size)
-				table.insert(Features, FeatureElement)
-				FeatureElement.Visible = Value
-				FeatureElement.Transparency = Value and 0 or 1
-			end
 			return Config
 		end
 
@@ -497,8 +467,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		end
 		CheckBox.Activated:Connect(Clicked)
 		Tickbox.Activated:Connect(Clicked)
-
-		Config:SetTicked(Value, true)
 
 		return ObjectClass
 	end
@@ -659,7 +627,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 			return Config
 		end
 
-		function ContainerClass:GetValue()
+		function Config:GetValue()
 			return Source.Text
 		end
 
@@ -851,23 +819,8 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local HeaderLabel = Separator.TextLabel
 		HeaderLabel.Text = Config.Text or ""
 
-		--// Apply section header styling if specified
-		if Config.HeaderStyle then
-			Separator.BackgroundColor3 = Config.BackgroundColor3 or Color3.fromRGB(50, 50, 50) -- Dark gray
-			Separator.BackgroundTransparency = 0
-			HeaderLabel.Font = Enum.Font.SourceSansBold
-			HeaderLabel.TextSize = Config.TextSize or 18
-			HeaderLabel.TextColor3 = Config.TextColor3 or Color3.fromRGB(255, 255, 255)
-			Separator.Size = UDim2.new(1, 0, 0, Config.Height or 30)
-
-			--// Add padding for visual separation
-			local UIPadding = Separator:FindFirstChildOfClass("UIPadding") or ImGui:CreateInstance("UIPadding", Separator)
-			UIPadding.PaddingTop = UDim.new(0, Config.PaddingTop or 5)
-			UIPadding.PaddingBottom = UDim.new(0, Config.PaddingBottom or 5)
-			UIPadding.PaddingLeft = UDim.new(0, Config.PaddingLeft or 10)
-			UIPadding.PaddingRight = UDim.new(0, Config.PaddingRight or 10)
-		else
-			HeaderLabel.Visible = Config.Text ~= ""
+		if not Config.Text then
+			HeaderLabel.Visible = false
 		end
 
 		return self:NewInstance(Separator, Config)
@@ -1182,7 +1135,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 
 		function Config:SetOpen(Open: boolean)
 			local Animate = Config.NoAnimation ~= true
-			ImGui:Header-selection(Combo, Animate, Open, Combo, Toggle)
+			ImGui:HeaderAnimate(Combo, Animate, Open, Combo, Toggle)
 			Config.Open = Open
 
 			if Open then
@@ -1478,7 +1431,7 @@ function ImGui:ConnectHover(Config)
 	Config.Hovering = false
 
 	--// Connect Events
-	table.insert(Connections Ros, Parent.MouseEnter:Connect(function()
+	table.insert(Connections, Parent.MouseEnter:Connect(function()
 		Config.Hovering = true
 	end))
 	table.insert(Connections, Parent.MouseLeave:Connect(function()
@@ -1605,8 +1558,26 @@ function ImGui:CreateWindow(WindowConfig)
 	local CloseButton: TextButton = TitleBar.Close
 	CloseButton.Visible = WindowConfig.NoClose ~= true
 
-	--// Define Colors table for dark gray backgrounds for all elements
+	--// Define Colors table for dark gray backgrounds and neon light purple glow on Window/TitleBar
 	WindowConfig.Colors = WindowConfig.Colors or {}
+	WindowConfig.Colors.Window = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+		UIStroke = {
+			Color = Color3.fromRGB(220, 180, 255),
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Thickness = 2,
+			Transparency = 0
+		}
+	}
+	WindowConfig.Colors.TitleBar = {
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+		UIStroke = {
+			Color = Color3.fromRGB(220, 180, 255),
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Thickness = 2,
+			Transparency = 0
+		}
+	}
 	WindowConfig.Colors.Button = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
@@ -1620,7 +1591,13 @@ function ImGui:CreateWindow(WindowConfig)
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
 	WindowConfig.Colors.CheckBox = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+		Tickbox = {
+			BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		},
+		Tick = {
+			BackgroundColor3 = Color3.fromRGB(200, 160, 255)
+		}
 	}
 	WindowConfig.Colors.Viewport = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
