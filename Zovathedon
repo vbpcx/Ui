@@ -1,3 +1,7 @@
+--// Written by depso
+--// MIT License
+--// Copyright (c) 2024 Depso
+
 local ImGui = {
 	Animations = {
 		Buttons = {
@@ -27,11 +31,11 @@ local ImGui = {
 		WindowBorder = {
 			Selected = {
 				Transparency = 0,
-				Thickness = 2
+				Thickness = 1
 			},
 			Deselected = {
 				Transparency = 0.7,
-				Thickness = 2
+				Thickness = 1
 			}
 		},
 	},
@@ -276,6 +280,13 @@ function ImGui:CheckStyles(GuiObject: GuiObject, Class, Colors)
 	if ColorOverwrites then
 		ImGui:ApplyColors(ColorOverwrites, GuiObject, ElementType)
 	end
+
+	--// Set properties
+	for Key, Value in next, Class do
+		pcall(function() --// If the property does not exist
+			GuiObject[Key] = Value
+		end)
+	end
 end
 
 function ImGui:MergeMetatables(Class, Instance: GuiObject)
@@ -403,17 +414,14 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local Label = CheckBox.Label
 		local ObjectClass = self:NewInstance(CheckBox, Config)
 
-		--// Explicitly set Tickbox background to dark gray
-		Tickbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-		--// Explicitly set Tick (checkmark) to light purple
-		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
-
 		--// Apply rounded corners to Tickbox and Tick
 		local TickboxCorner = Tickbox:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tickbox)
 		TickboxCorner.CornerRadius = UDim.new(0.25, 0)
 		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
 		TickCorner.CornerRadius = UDim.new(0.25, 0)
+
+		--// Set Tick color to light purple for all checkboxes (including radio buttons)
+		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -1558,26 +1566,8 @@ function ImGui:CreateWindow(WindowConfig)
 	local CloseButton: TextButton = TitleBar.Close
 	CloseButton.Visible = WindowConfig.NoClose ~= true
 
-	--// Define Colors table for dark gray backgrounds and neon light purple glow on Window and TitleBar
+	--// Define Colors table for dark gray backgrounds for all elements
 	WindowConfig.Colors = WindowConfig.Colors or {}
-	WindowConfig.Colors.Window = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-		UIStroke = {
-			Color = Color3.fromRGB(200, 160, 255),
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Thickness = 2,
-			Transparency = 0
-		}
-	}
-	WindowConfig.Colors.TitleBar = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-		UIStroke = {
-			Color = Color3.fromRGB(200, 160, 255),
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Thickness = 2,
-			Transparency = 0
-		}
-	}
 	WindowConfig.Colors.Button = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
@@ -1591,13 +1581,7 @@ function ImGui:CreateWindow(WindowConfig)
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
 	WindowConfig.Colors.CheckBox = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-		Tickbox = {
-			BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		},
-		Tick = {
-			BackgroundColor3 = Color3.fromRGB(200, 160, 255)
-		}
+		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	}
 	WindowConfig.Colors.Viewport = {
 		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
