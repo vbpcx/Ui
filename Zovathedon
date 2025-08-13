@@ -420,8 +420,9 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
 		TickCorner.CornerRadius = UDim.new(0.25, 0)
 
-		--// Set Tick color to light purple for all checkboxes (including radio buttons)
-		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
+		--// Set Tickbox background to dark gray and Tick to light purple
+		Tickbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Dark gray
+		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255) -- Light purple
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -436,6 +437,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		ImGui:ApplyAnimations(CheckBox, "Buttons", Tickbox)
 
 		local Value = Config.Value or false
+		local Features = Config.Features or {} -- Table to store feature elements
 
 		--// Callback
 		local function Callback(...)
@@ -447,7 +449,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 			Value = NewValue
 			Config.Value = Value
 
-			--// Animations
+			--// Animations for checkbox
 			local Size = Value and UDim2.fromScale(1,1) or UDim2.fromScale(0,0)
 			ImGui:Tween(Tick, {
 				Size = Size
@@ -456,15 +458,35 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 				TextTransparency = Value and 0 or 0.3
 			}, nil, NoAnimation)
 
+			--// Feature visibility animation
+			for _, Feature in pairs(Features) do
+				ImGui:Tween(Feature, {
+					Visible = Value,
+					Size = Value and Feature:GetAttribute("OriginalSize") or UDim2.fromScale(0, 0),
+					Transparency = Value and 0 or 1
+				}, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), NoAnimation)
+			end
+
 			--// Fire callback
 			Callback(Value)
 
 			return Config
 		end
-		Config:SetTicked(Value, true)
 
 		function Config:Toggle()
 			Config:SetTicked(not Value)
+			return Config
+		end
+
+		--// Add feature method
+		function Config:AddFeature(FeatureElement)
+			if FeatureElement then
+				-- Store original size for animation
+				FeatureElement:SetAttribute("OriginalSize", FeatureElement.Size)
+				table.insert(Features, FeatureElement)
+				FeatureElement.Visible = Value
+				FeatureElement.Transparency = Value and 0 or 1
+			end
 			return Config
 		end
 
@@ -475,6 +497,8 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		end
 		CheckBox.Activated:Connect(Clicked)
 		Tickbox.Activated:Connect(Clicked)
+
+		Config:SetTicked(Value, true)
 
 		return ObjectClass
 	end
