@@ -1528,11 +1528,12 @@ function ImGui:CreateWindow(WindowConfig)
 	Toggle.Visible = WindowConfig.NoCollapse ~= true
 	ImGui:ApplyAnimations(Toggle.ToggleButton, "Tabs")
 
-	--// ToolBar (Vertical Tabs)
+	--// ToolBar (Vertical Tabs on Right)
 	local ToolBar = Content.ToolBar
 	ToolBar.Visible = WindowConfig.TabsBar ~= false
-	ToolBar.Position = UDim2.new(0, 0, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0)
-	ToolBar.Size = UDim2.new(0, 100, 1, TitleBar.Visible and -TitleBar.Size.Y.Offset or 0) -- Fixed width, full height minus titlebar
+	local tabBarWidth = 100 -- Fixed width for ToolBar
+	ToolBar.Position = UDim2.new(1, -tabBarWidth, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0)
+	ToolBar.Size = UDim2.new(0, tabBarWidth, 1, TitleBar.Visible and -TitleBar.Size.Y.Offset or 0) -- Fixed width, full height minus titlebar
 	local ToolBarLayout = ToolBar:FindFirstChildOfClass("UIListLayout")
 	if ToolBarLayout then
 		ToolBarLayout.FillDirection = Enum.FillDirection.Vertical
@@ -1542,7 +1543,7 @@ function ImGui:CreateWindow(WindowConfig)
 	--// Separator
 	local Separator = ImGui:CreateInstance("Frame", Content, {
 		Name = "Separator",
-		Position = UDim2.new(0, 100, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0),
+		Position = UDim2.new(1, -tabBarWidth - 2, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0),
 		Size = UDim2.new(0, 2, 1, TitleBar.Visible and -TitleBar.Size.Y.Offset or 0),
 		BackgroundColor3 = Color3.fromRGB(211, 211, 211), -- Light gray separator
 		BorderSizePixel = 0
@@ -1582,7 +1583,7 @@ function ImGui:CreateWindow(WindowConfig)
 		local HeaderSizeY = self:GetHeaderSizeY()
 		local TabBarSizeX = self:GetTabBarSizeX()
 		Body.Size = UDim2.new(1, -TabBarSizeX - 2, 1, -HeaderSizeY) -- Adjusted for separator width
-		Body.Position = UDim2.new(0, TabBarSizeX + 2, 0, HeaderSizeY) -- Adjusted for separator
+		Body.Position = UDim2.new(0, 0, 0, HeaderSizeY) -- Positioned on left, below title bar
 	end
 	WindowConfig:UpdateBody()
 
@@ -1762,7 +1763,7 @@ function ImGui:CreateWindow(WindowConfig)
 
 		--// Page animation
 		if not TargetPage.Visible and not TabClass.NoAnimation then
-			TargetPage.Position = UDim2.fromOffset(5, 0) -- Animate from right
+			TargetPage.Position = UDim2.fromOffset(-5, 0) -- Animate from left
 		end
 
 		--// Hide other tabs
