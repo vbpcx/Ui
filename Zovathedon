@@ -1528,30 +1528,8 @@ function ImGui:CreateWindow(WindowConfig)
 	Toggle.Visible = WindowConfig.NoCollapse ~= true
 	ImGui:ApplyAnimations(Toggle.ToggleButton, "Tabs")
 
-	--// ToolBar (Vertical Tabs on Right)
 	local ToolBar = Content.ToolBar
 	ToolBar.Visible = WindowConfig.TabsBar ~= false
-	local tabBarWidth = 100 -- Fixed width for ToolBar
-	ToolBar.Position = UDim2.new(1, -tabBarWidth, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0)
-	ToolBar.Size = UDim2.new(0, tabBarWidth, 1, TitleBar.Visible and -TitleBar.Size.Y.Offset or 0) -- Fixed width, full height minus titlebar
-	local ToolBarLayout = ToolBar:FindFirstChildOfClass("UIListLayout")
-	if ToolBarLayout then
-		ToolBarLayout.FillDirection = Enum.FillDirection.Vertical
-		ToolBarLayout.Padding = UDim.new(0, 5)
-	end
-
-	--// Separator
-	local Separator = ImGui:CreateInstance("Frame", Content, {
-		Name = "Separator",
-		Position = UDim2.new(1, -tabBarWidth - 2, 0, TitleBar.Visible and TitleBar.Size.Y.Offset or 0),
-		Size = UDim2.new(0, 2, 1, TitleBar.Visible and -TitleBar.Size.Y.Offset or 0),
-		BackgroundColor3 = Color3.fromRGB(211, 211, 211), -- Light gray separator
-		BorderSizePixel = 0
-	})
-	local SeparatorStroke = ImGui:CreateInstance("UIStroke", Separator, {
-		Color = Color3.fromRGB(211, 211, 211), -- Light gray stroke
-		Thickness = 1
-	})
 
 	if not WindowConfig.NoDrag then
 		ImGui:ApplyDraggable(Window)
@@ -1572,18 +1550,14 @@ function ImGui:CreateWindow(WindowConfig)
 	CloseButton.Activated:Connect(WindowConfig.Close)
 
 	function WindowConfig:GetHeaderSizeY(): number
-		return TitleBar.Visible and TitleBar.AbsoluteSize.Y or 0
-	end
-
-	function WindowConfig:GetTabBarSizeX(): number
-		return ToolBar.Visible and ToolBar.Size.X.Offset or 0
+		local ToolbarY = ToolBar.Visible and ToolBar.AbsoluteSize.Y or 0
+		local TitlebarY = TitleBar.Visible and TitleBar.AbsoluteSize.Y or 0
+		return ToolbarY + TitlebarY
 	end
 
 	function WindowConfig:UpdateBody()
 		local HeaderSizeY = self:GetHeaderSizeY()
-		local TabBarSizeX = self:GetTabBarSizeX()
-		Body.Size = UDim2.new(1, -TabBarSizeX - 2, 1, -HeaderSizeY) -- Adjusted for separator width
-		Body.Position = UDim2.new(0, 0, 0, HeaderSizeY) -- Positioned on left, below title bar
+		Body.Size = UDim2.new(1, 0, 1, -HeaderSizeY)
 	end
 	WindowConfig:UpdateBody()
 
@@ -1668,7 +1642,6 @@ function ImGui:CreateWindow(WindowConfig)
 		TabButton.Text = Name
 		TabButton.Visible = true
 		TabButton.Parent = ToolBar
-		TabButton.Size = UDim2.new(1, 0, 0, 40) -- Fixed height for vertical tabs
 		Config.Button = TabButton
 
 		local AutoSizeAxis = WindowConfig.AutoSize or "Y"
@@ -1678,24 +1651,6 @@ function ImGui:CreateWindow(WindowConfig)
 		Content.Name = Name
 		Content.Parent = Body
 		Config.Content = Content
-
-		-- Create two sections within the tab content
-		local Section1 = ImGui:CreateInstance("Frame", Content, {
-			Name = "Section1",
-			Size = UDim2.new(1, 0, 0.5, -2.5), -- Half height minus padding
-			Position = UDim2.new(0, 0, 0, 0),
-			BackgroundTransparency = 1
-		})
-		local Section2 = ImGui:CreateInstance("Frame", Content, {
-			Name = "Section2",
-			Size = UDim2.new(1, 0, 0.5, -2.5), -- Half height minus padding
-			Position = UDim2.new(0, 0, 0.5, 2.5), -- Start below Section1 with padding
-			BackgroundTransparency = 1
-		})
-		local ContentLayout = ImGui:CreateInstance("UIListLayout", Content, {
-			FillDirection = Enum.FillDirection.Vertical,
-			Padding = UDim.new(0, 5)
-		})
 
 		if AutoSizeAxis == "Y" then
 			Content.Size = UDim2.fromScale(1, 0)
@@ -1724,10 +1679,6 @@ function ImGui:CreateWindow(WindowConfig)
 			end)
 		end
 
-		-- Expose sections for adding content
-		Config.Section1 = ImGui:ContainerClass(Section1, {}, Window)
-		Config.Section2 = ImGui:ContainerClass(Section2, {}, Window)
-
 		return Config
 	end
 
@@ -1738,7 +1689,6 @@ function ImGui:CreateWindow(WindowConfig)
 
 	function WindowConfig:SetSize(Size)
 		local HeaderSizeY = self:GetHeaderSizeY()
-		local TabBarSizeX = self:GetTabBarSizeX()
 
 		if typeof(Size) == "Vector2" then
 			Size = UDim2.fromOffset(Size.X, Size.Y)
@@ -1747,7 +1697,7 @@ function ImGui:CreateWindow(WindowConfig)
 		--// Apply new size
 		local NewSize = UDim2.new(
 			Size.X.Scale,
-			Size.X.Offset + TabBarSizeX + 2, -- Adjusted for separator
+			Size.X.Offset,
 			Size.Y.Scale,
 			Size.Y.Offset + HeaderSizeY
 		)
@@ -1763,7 +1713,7 @@ function ImGui:CreateWindow(WindowConfig)
 
 		--// Page animation
 		if not TargetPage.Visible and not TabClass.NoAnimation then
-			TargetPage.Position = UDim2.fromOffset(-5, 0) -- Animate from left
+			TargetPage.Position = UDim2.fromOffset(0, 5)
 		end
 
 		--// Hide other tabs
