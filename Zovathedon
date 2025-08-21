@@ -63,7 +63,6 @@ local UserInputService: UserInputService = GetService("UserInputService")
 local Players: Players = GetService("Players")
 local CoreGui = GetService("CoreGui")
 local RunService: RunService = GetService("RunService")
-local HttpService: HttpService = GetService("HttpService")
 
 --// LocalPlayer
 local LocalPlayer = Players.LocalPlayer
@@ -73,11 +72,6 @@ local Mouse = LocalPlayer:GetMouse()
 --// ImGui Config
 local IsStudio = RunService:IsStudio()
 ImGui.NoWarnings = not IsStudio
-
---// Config Storage
-local ConfigFolder = Instance.new("Folder")
-ConfigFolder.Name = "ImGuiConfigs"
-ConfigFolder.Parent = PlayerGui
 
 --// Prefabs
 function ImGui:FetchUI()
@@ -145,7 +139,6 @@ local AddionalStyles = {
 		Name="CornerRadius",
 		Recursive=true
 	}] = function(GuiObject: GuiObject, Value, Class)
-		if not Value then return end
 		local UICorner = GuiObject:FindFirstChildOfClass("UICorner")
 		if not UICorner then
 			UICorner = ImGui:CreateInstance("UICorner", GuiObject)
@@ -406,23 +399,12 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 	function ContainerClass:Checkbox(Config)
 		Config = Config or {}
 		local IsRadio = Config.IsRadio
-		Config.CornerRadius = UDim.new(0.25, 0) -- 25% rounded corners for checkbox
 
 		local CheckBox = Prefabs.CheckBox:Clone()
 		local Tickbox: ImageButton = CheckBox.Tickbox
 		local Tick: ImageLabel = Tickbox.Tick
 		local Label = CheckBox.Label
 		local ObjectClass = self:NewInstance(CheckBox, Config)
-
-		--// Apply rounded corners to Tickbox and Tick
-		local TickboxCorner = Tickbox:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tickbox)
-		TickboxCorner.CornerRadius = UDim.new(0.25, 0)
-		local TickCorner = Tick:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Tick)
-		TickCorner.CornerRadius = UDim.new(0.25, 0)
-
-		--// Set Tickbox background to dark gray and Tick to light purple
-		Tickbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Dark gray
-		Tick.BackgroundColor3 = Color3.fromRGB(200, 160, 255) -- Light purple
 
 		--// Stylise to correct type
 		if IsRadio then
@@ -437,7 +419,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		ImGui:ApplyAnimations(CheckBox, "Buttons", Tickbox)
 
 		local Value = Config.Value or false
-		local Features = Config.Features or {} -- Table to store feature elements
 
 		--// Callback
 		local function Callback(...)
@@ -449,7 +430,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 			Value = NewValue
 			Config.Value = Value
 
-			--// Animations for checkbox
+			--// Animations
 			local Size = Value and UDim2.fromScale(1,1) or UDim2.fromScale(0,0)
 			ImGui:Tween(Tick, {
 				Size = Size
@@ -458,35 +439,15 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 				TextTransparency = Value and 0 or 0.3
 			}, nil, NoAnimation)
 
-			--// Feature visibility animation
-			for _, Feature in pairs(Features) do
-				ImGui:Tween(Feature, {
-					Visible = Value,
-					Size = Value and Feature:GetAttribute("OriginalSize") or UDim2.fromScale(0, 0),
-					Transparency = Value and 0 or 1
-				}, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), NoAnimation)
-			end
-
 			--// Fire callback
 			Callback(Value)
 
 			return Config
 		end
+		Config:SetTicked(Value, true)
 
 		function Config:Toggle()
 			Config:SetTicked(not Value)
-			return Config
-		end
-
-		--// Add feature method
-		function Config:AddFeature(FeatureElement)
-			if FeatureElement then
-				-- Store original size for animation
-				FeatureElement:SetAttribute("OriginalSize", FeatureElement.Size)
-				table.insert(Features, FeatureElement)
-				FeatureElement.Visible = Value
-				FeatureElement.Transparency = Value and 0 or 1
-			end
 			return Config
 		end
 
@@ -497,8 +458,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		end
 		CheckBox.Activated:Connect(Clicked)
 		Tickbox.Activated:Connect(Clicked)
-
-		Config:SetTicked(Value, true)
 
 		return ObjectClass
 	end
@@ -835,7 +794,7 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		--// Open
 		Config:SetOpen(Config.Open or false)
 
-		local ContainClass = ImGui:ContainerClass(Holder, Config, Window) 
+		local ContainClass = ImGui:ContainerClass(Container, Config, Window) 
 		return self:NewInstance(Header, ContainClass)
 	end
 
@@ -904,7 +863,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local ValueFormat = Config.Format or "%.d"
 		local IsProgress = Config.Progress
 		Config.Name = Config.Label or ""
-		Config.CornerRadius = UDim.new(0.25, 0) -- 25% rounded corners for slider
 		
 		--// Slider element
 		local Slider: TextButton = Prefabs.Slider:Clone()
@@ -912,15 +870,6 @@ function ImGui:ContainerClass(Frame: Frame, Class, Window)
 		local Grab: Frame = Slider.Grab
 		local ValueText = Slider.ValueText
 		local Label = Slider.Label
-		
-		--// Set Grab color to light purple
-		Grab.BackgroundColor3 = Color3.fromRGB(200, 160, 255)
-		
-		--// Apply rounded corners to Grab and ValueText
-		local GrabCorner = Grab:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", Grab)
-		GrabCorner.CornerRadius = UDim.new(0.25, 0)
-		local ValueTextCorner = ValueText:FindFirstChildOfClass("UICorner") or ImGui:CreateInstance("UICorner", ValueText)
-		ValueTextCorner.CornerRadius = UDim.new(0.25, 0)
 		
 		--// Input data
 		local Dragging = false
@@ -1493,7 +1442,7 @@ function ImGui:ApplyWindowSelectEffect(Window: GuiObject, TitleBar)
 			BackgroundColor3 = TitleBar.BackgroundColor3
 		},
 		Deselected = {
-			BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			BackgroundColor3 = Color3.fromRGB(211, 211, 211) -- Changed from black to light gray
 		}
 	}
 
@@ -1590,60 +1539,6 @@ function ImGui:CreateWindow(WindowConfig)
 	local CloseButton: TextButton = TitleBar.Close
 	CloseButton.Visible = WindowConfig.NoClose ~= true
 
-	--// Define Colors table for dark gray backgrounds for all elements
-	WindowConfig.Colors = WindowConfig.Colors or {}
-	WindowConfig.Colors.Button = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Image = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.ScrollBox = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Label = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.CheckBox = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Viewport = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.TextInput = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Console = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Table = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.CollapsingHeader = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.TreeNode = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Separator = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Row = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Slider = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Keybind = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.Combo = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-	WindowConfig.Colors.ProgressBar = {
-		BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	}
-
 	function WindowConfig:Close()
 		local Callback = WindowConfig.CloseCallback
 		WindowConfig:SetVisible(false)
@@ -1732,112 +1627,6 @@ function ImGui:CreateWindow(WindowConfig)
 		self.Colors.TitleBar.BackgroundColor3 = Color
 
 		return self
-	end
-
-	--// Config System
-	function WindowConfig:SaveConfig(ConfigName: string)
-		if not ConfigName or ConfigName == "" then
-			ImGui:Warn("Config name cannot be empty")
-			return self
-		end
-
-		local ConfigData = {
-			Position = {
-				X = {Scale = Window.Position.X.Scale, Offset = Window.Position.X.Offset},
-				Y = {Scale = Window.Position.Y.Scale, Offset = Window.Position.Y.Offset}
-			},
-			Size = {
-				X = {Scale = Window.Size.X.Scale, Offset = Window.Size.X.Offset},
-				Y = {Scale = Window.Size.Y.Scale, Offset = Window.Size.Y.Offset}
-			},
-			Color = {
-				R = self.Colors.Window.BackgroundColor3.R,
-				G = self.Colors.Window.BackgroundColor3.G,
-				B = self.Colors.Window.BackgroundColor3.B
-			}
-		}
-
-		local Success, Encoded = pcall(function()
-			return HttpService:JSONEncode(ConfigData)
-		end)
-
-		if not Success then
-			ImGui:Warn("Failed to encode config:", ConfigName)
-			return self
-		end
-
-		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName) or Instance.new("StringValue")
-		ConfigInstance.Name = ConfigName
-		ConfigInstance.Value = Encoded
-		ConfigInstance.Parent = ConfigFolder
-
-		return self
-	end
-
-	function WindowConfig:LoadConfig(ConfigName: string)
-		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName)
-		if not ConfigInstance then
-			ImGui:Warn("Config not found:", ConfigName)
-			return self
-		end
-
-		local Success, ConfigData = pcall(function()
-			return HttpService:JSONDecode(ConfigInstance.Value)
-		end)
-
-		if not Success then
-			ImGui:Warn("Failed to decode config:", ConfigName)
-			return self
-		end
-
-		-- Apply position
-		if ConfigData.Position then
-			self:SetPosition(UDim2.new(
-				ConfigData.Position.X.Scale,
-				ConfigData.Position.X.Offset,
-				ConfigData.Position.Y.Scale,
-				ConfigData.Position.Y.Offset
-			))
-		end
-
-		-- Apply size
-		if ConfigData.Size then
-			self:SetSize(UDim2.new(
-				ConfigData.Size.X.Scale,
-				ConfigData.Size.X.Offset,
-				ConfigData.Size.Y.Scale,
-				ConfigData.Size.Y.Offset
-			))
-		end
-
-		-- Apply color
-		if ConfigData.Color then
-			self:SetWindowColor(Color3.new(
-				ConfigData.Color.R,
-				ConfigData.Color.G,
-				ConfigData.Color.B
-			))
-		end
-
-		return self
-	end
-
-	function WindowConfig:DeleteConfig(ConfigName: string)
-		local ConfigInstance = ConfigFolder:FindFirstChild(ConfigName)
-		if ConfigInstance then
-			ConfigInstance:Destroy()
-		else
-			ImGui:Warn("Config not found:", ConfigName)
-		end
-		return self
-	end
-
-	function WindowConfig:GetConfigs()
-		local Configs = {}
-		for _, ConfigInstance in ipairs(ConfigFolder:GetChildren()) do
-			table.insert(Configs, ConfigInstance.Name)
-		end
-		return Configs
 	end
 
 	Toggle.ToggleButton.Activated:Connect(function()
@@ -1949,12 +1738,12 @@ function ImGui:CreateWindow(WindowConfig)
 	--// Load Style Configs
 	WindowConfig:SetTitle(WindowConfig.Title or "Depso UI")
 
-	--// Set default window color to pure black
-	WindowConfig:SetWindowColor(Color3.fromRGB(0, 0, 0))
+	--// Set default window color to dark teal
+	WindowConfig:SetWindowColor(Color3.fromRGB(0, 128, 128))
 
 	if not WindowConfig.Open then
 		WindowConfig:SetOpen(WindowConfig.Open or true, true)
-	end
+	 end
 
 	ImGui.Windows[Window] = WindowConfig
 	ImGui:CheckStyles(Window, WindowConfig, WindowConfig.Colors)
